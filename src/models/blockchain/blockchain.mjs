@@ -3,21 +3,59 @@ import Block from './block.mjs';
 import Transaction from '../wallet/transaction.mjs';
 import Wallet from '../wallet/wallet.mjs';
 import { REWARD_ADDRESS, MINING_REWARD } from '../../utilities/config.mjs';
+import { BlockchainService } from '../../database/blockchainService.mjs';
 
 export default class Blockchain {
   constructor() {
     this.chain = [Block.genesis()];
+    this.isInitialized = false;
   }
 
-  addBlock({ data }) {
+  async initializeFromDatabase() {
+    try {
+      const savedChain = await BlockchainService.getBlockchain();
+      if (savedChain.length > 1) {
+        this.chain = savedChain;
+        console.log(
+          `Loaded blockchain from database with ${savedChain.length} blocks`
+        );
+      } else {
+        await this.saveGenesisBlock();
+      }
+      this.isInitialized = true;
+    } catch (error) {
+      console.error('Error initializing blockchain from database:', error);
+      await this.saveGenesisBlock();
+      this.isInitialized = true;
+    }
+  }
+
+  async saveGenesisBlock() {
+    try {
+      await BlockchainService.saveBlock(this.chain[0], 0);
+      console.log('Genesis block saved to database');
+    } catch (error) {
+      console.error('Error saving genesis block:', error);
+    }
+  }
+
+  async addBlock({ data }) {
     const addedBlock = Block.mineBlock({
       previousBlock: this.chain.at(-1),
       data,
     });
+
     this.chain.push(addedBlock);
+
+    try {
+      await BlockchainService.saveBlock(addedBlock, this.chain.length - 1);
+      console.log(`Block ${addedBlock.hash} saved to database`);
+    } catch (error) {
+      console.error('Error saving block to database:', error);
+    }
   }
 
-  replaceChain(chain, callback) {
+  async replaceChain(chain, callback) {
     if (chain.length <= this.chain.length) return;
 
     if (!Blockchain.isValid(chain)) return;
@@ -25,6 +63,15 @@ export default class Blockchain {
     if (callback) callback();
 
     this.chain = chain;
+
+    try {
+      for (let i = 0; i < chain.length; i++) {
+        await BlockchainService.saveBlock(chain[i], i);
+      }
+      console.log('Blockchain replaced and saved to database');
+    } catch (error) {
+      console.error('Error saving replaced chain to database:', error);
+    }
   }
 
   validateTransactionData({ chain }) {

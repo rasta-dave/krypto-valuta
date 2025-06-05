@@ -6,44 +6,57 @@ import WebSocketServer from './network/WebSocketServer.mjs';
 import Blockchain from './models/blockchain/blockchain.mjs';
 import TransactionPool from './models/wallet/transactionPool.mjs';
 import Wallet from './models/wallet/wallet.mjs';
+import { connectDB } from './database/connection.mjs';
 
-const blockchain = new Blockchain();
-const transactionPool = new TransactionPool();
-const wallet = new Wallet();
+const initializeServer = async () => {
+  await connectDB();
 
-const networkServer = new WebSocketServer({
-  blockchain,
-  transactionPool,
-  wallet,
-});
+  const blockchain = new Blockchain();
+  await blockchain.initializeFromDatabase();
 
-app.locals.blockchain = blockchain;
-app.locals.transactionPool = transactionPool;
-app.locals.wallet = wallet;
-app.locals.networkServer = networkServer;
+  const transactionPool = new TransactionPool();
+  const wallet = new Wallet();
 
-app.use('/api/blocks', blockchainRoutes);
-app.use('/api/wallet', transactionRoutes);
+  const networkServer = new WebSocketServer({
+    blockchain,
+    transactionPool,
+    wallet,
+  });
 
-const DEFAULT_PORT = 3000;
-const ROOT_NODE = `http://localhost:${DEFAULT_PORT}`;
-let NODE_PORT;
+  app.locals.blockchain = blockchain;
+  app.locals.transactionPool = transactionPool;
+  app.locals.wallet = wallet;
+  app.locals.networkServer = networkServer;
 
-if (process.env.GENERATE_NODE_PORT === 'true') {
-  NODE_PORT = DEFAULT_PORT + Math.ceil(Math.random() * 1000);
-}
+  app.use('/api/blocks', blockchainRoutes);
+  app.use('/api/wallet', transactionRoutes);
 
-const PORT = NODE_PORT || DEFAULT_PORT;
+  const DEFAULT_PORT = 3000;
+  const ROOT_NODE = `http://localhost:${DEFAULT_PORT}`;
+  let NODE_PORT;
 
-const server = createServer(app);
-networkServer.listen(server);
-
-server.listen(PORT, () => {
-  console.log(`SmartChain server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`WebSocket server active for blockchain network`);
-
-  if (PORT !== DEFAULT_PORT) {
-    networkServer.syncWithPeers(ROOT_NODE);
+  if (process.env.GENERATE_NODE_PORT === 'true') {
+    NODE_PORT = DEFAULT_PORT + Math.ceil(Math.random() * 1000);
   }
+
+  const PORT = NODE_PORT || DEFAULT_PORT;
+
+  const server = createServer(app);
+  networkServer.listen(server);
+
+  server.listen(PORT, () => {
+    console.log(`SmartChain server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`WebSocket server active for blockchain network`);
+    console.log(`MongoDB integration active`);
+
+    if (PORT !== DEFAULT_PORT) {
+      networkServer.syncWithPeers(ROOT_NODE);
+    }
+  });
+};
+
+initializeServer().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
