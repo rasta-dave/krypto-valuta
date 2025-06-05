@@ -1,4 +1,5 @@
-import { ec as EC } from 'elliptic';
+import pkg from 'elliptic';
+const { ec: EC } = pkg;
 
 const ec = new EC('secp256k1');
 

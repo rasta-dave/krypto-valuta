@@ -12,7 +12,7 @@ export default class Wallet {
 
   static calculateBalance({ chain, address }) {
     let total = 0;
-    hasMadeTransaction = false;
+    let hasMadeTransaction = false;
 
     for (let i = chain.length - 1; i > 0; i--) {
       const block = chain[i];
@@ -28,6 +28,12 @@ export default class Wallet {
           total += amount;
         }
       }
+
+      if (hasMadeTransaction) {
+        break;
+      }
     }
+
+    return hasMadeTransaction ? total : INITIAL_BALANCE + total;
   }
 }
