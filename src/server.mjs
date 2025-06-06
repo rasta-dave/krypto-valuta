@@ -1,11 +1,12 @@
 import { createServer } from 'http';
 import { app } from './app.mjs';
+import authRoutes from './routes/auth-routes.mjs';
 import blockchainRoutes from './routes/blockchain-routes.mjs';
 import transactionRoutes from './routes/transaction-routes.mjs';
 import WebSocketServer from './network/WebSocketServer.mjs';
-import Blockchain from './models/blockchain/blockchain.mjs';
-import TransactionPool from './models/wallet/transactionPool.mjs';
-import Wallet from './models/wallet/wallet.mjs';
+import Blockchain from './models/blockchain/Blockchain.mjs';
+import TransactionPool from './models/wallet/TransactionPool.mjs';
+import Wallet from './models/wallet/Wallet.mjs';
 import { connectDB } from './database/connection.mjs';
 
 const initializeServer = async () => {
@@ -28,6 +29,7 @@ const initializeServer = async () => {
   app.locals.wallet = wallet;
   app.locals.networkServer = networkServer;
 
+  app.use('/api/auth', authRoutes);
   app.use('/api/blocks', blockchainRoutes);
   app.use('/api/wallet', transactionRoutes);
 
@@ -49,6 +51,7 @@ const initializeServer = async () => {
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`WebSocket server active for blockchain network`);
     console.log(`MongoDB integration active`);
+    console.log(`JWT Authentication system active`);
 
     if (PORT !== DEFAULT_PORT) {
       networkServer.syncWithPeers(ROOT_NODE);
