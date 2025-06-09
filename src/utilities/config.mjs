@@ -15,3 +15,10 @@ export const MINING_REWARD = 50;
 export const REWARD_ADDRESS = {
   address: '*reward-address*',
 };
+
+export const REWARD_INPUT = {
+  timestamp: Date.now(),
+  amount: MINING_REWARD,
+  address: REWARD_ADDRESS.address,
+  signature: '*reward-signature*',
+};

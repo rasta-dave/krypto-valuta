@@ -1,45 +1,86 @@
-import Transaction from './transaction.mjs';
+import { v4 as uuidv4 } from 'uuid';
+import { verifySignature } from '../../utilities/keyManager.mjs';
+import { REWARD_INPUT, MINING_REWARD } from '../../utilities/config.mjs';
 
-export default class TransactionPool {
-  constructor() {
-    this.transactionMap = {};
+export default class Transaction {
+  constructor({ senderWallet, recipient, amount, outputMap, input }) {
+    this.id = uuidv4();
+    this.outputMap =
+      outputMap || this.createOutputMap({ senderWallet, recipient, amount });
+    this.input =
+      input || this.createInput({ senderWallet, outputMap: this.outputMap });
   }
 
-  addTransaction(transaction) {
-    this.transactionMap[transaction.id] = transaction;
+  createOutputMap({ senderWallet, recipient, amount }) {
+    const outputMap = {};
+
+    outputMap[recipient] = amount;
+    outputMap[senderWallet.publicKey] = senderWallet.balance - amount;
+
+    return outputMap;
   }
 
-  clearBlockTransactions({ chain }) {
-    for (let i = 1; i < chain.length; i++) {
-      const block = chain[i];
+  createInput({ senderWallet, outputMap }) {
+    return {
+      timestamp: Date.now(),
+      amount: senderWallet.balance,
+      address: senderWallet.publicKey,
+      signature: senderWallet.sign(outputMap),
+    };
+  }
 
-      for (let transaction of block.data) {
-        if (this.transactionMap[transaction.id]) {
-          delete this.transactionMap[transaction.id];
-        }
-      }
+  update({ senderWallet, recipient, amount }) {
+    if (amount > this.outputMap[senderWallet.publicKey]) {
+      throw new Error('Amount exceeds balance');
     }
+
+    if (!this.outputMap[recipient]) {
+      this.outputMap[recipient] = amount;
+    } else {
+      this.outputMap[recipient] = this.outputMap[recipient] + amount;
+    }
+
+    this.outputMap[senderWallet.publicKey] =
+      this.outputMap[senderWallet.publicKey] - amount;
+
+    this.input = this.createInput({ senderWallet, outputMap: this.outputMap });
   }
 
-  clearTransactions() {
-    this.transactionMap = {};
-  }
+  static validate(transaction) {
+    const {
+      input: { address, amount, signature },
+      outputMap,
+    } = transaction;
 
-  replaceMap(transactionMap) {
-    this.transactionMap = transactionMap;
-  }
-
-  transactionExists({ address }) {
-    const transactions = Object.values(this.transactionMap);
-
-    return transactions.find(
-      (transaction) => transaction.input.address === address
+    const outputTotal = Object.values(outputMap).reduce(
+      (total, outputAmount) => total + outputAmount
     );
+
+    if (amount !== outputTotal) {
+      console.error(`Invalid transaction from ${address}`);
+      return false;
+    }
+
+    if (!verifySignature({ publicKey: address, data: outputMap, signature })) {
+      console.error(`Invalid signature from ${address}`);
+      return false;
+    }
+
+    return true;
   }
 
-  validateTransactions() {
-    return Object.values(this.transactionMap).filter((transaction) =>
-      Transaction.validate(transaction)
-    );
+  static createTransaction({ senderWallet, recipient, amount }) {
+    if (amount > senderWallet.balance) {
+      throw new Error('Amount exceeds balance');
+    }
+
+    return new this({ senderWallet, recipient, amount });
+  }
+
+  static createRewardTransaction({ minerWallet }) {
+    return new this({
+      input: REWARD_INPUT,
+      outputMap: { [minerWallet.publicKey]: MINING_REWARD },
+    });
   }
 }

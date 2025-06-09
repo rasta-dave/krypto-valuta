@@ -4,6 +4,7 @@ import Transaction from '../wallet/transaction.mjs';
 import Wallet from '../wallet/wallet.mjs';
 import { REWARD_ADDRESS, MINING_REWARD } from '../../utilities/config.mjs';
 import { BlockchainService } from '../../database/blockchainService.mjs';
+import { TransactionValidator } from '../../utilities/transactionValidator.mjs';
 
 export default class Blockchain {
   constructor() {
@@ -19,6 +20,10 @@ export default class Blockchain {
         console.log(
           `Loaded blockchain from database with ${savedChain.length} blocks`
         );
+
+        if (!this.validateFullChain()) {
+          throw new Error('Loaded blockchain is invalid');
+        }
       } else {
         await this.saveGenesisBlock();
       }
@@ -40,25 +45,48 @@ export default class Blockchain {
   }
 
   async addBlock({ data }) {
-    const addedBlock = Block.mineBlock({
-      previousBlock: this.chain.at(-1),
-      data,
-    });
-
-    this.chain.push(addedBlock);
-
     try {
+      TransactionValidator.validateBlockTransactions({ data }, this.chain);
+
+      const addedBlock = Block.mineBlock({
+        previousBlock: this.chain.at(-1),
+        data,
+      });
+
+      this.chain.push(addedBlock);
+
       await BlockchainService.saveBlock(addedBlock, this.chain.length - 1);
-      console.log(`Block ${addedBlock.hash} saved to database`);
+      console.log(
+        `Block ${addedBlock.hash} saved to database with ${data.length} transactions`
+      );
+
+      return addedBlock;
     } catch (error) {
-      console.error('Error saving block to database:', error);
+      console.error('Error adding block:', error);
+      throw error;
     }
   }
 
   async replaceChain(chain, callback) {
-    if (chain.length <= this.chain.length) return;
+    if (chain.length <= this.chain.length) {
+      console.log('Received chain is not longer than current chain');
+      return false;
+    }
 
-    if (!Blockchain.isValid(chain)) return;
+    if (!Blockchain.isValid(chain)) {
+      console.log('Received chain is invalid');
+      return false;
+    }
+
+    try {
+      if (!this.validateFullChainTransactions(chain)) {
+        console.log('Received chain has invalid transactions');
+        return false;
+      }
+    } catch (error) {
+      console.error('Chain transaction validation failed:', error.message);
+      return false;
+    }
 
     if (callback) callback();
 
@@ -72,24 +100,71 @@ export default class Blockchain {
     } catch (error) {
       console.error('Error saving replaced chain to database:', error);
     }
+
+    return true;
   }
 
   validateTransactionData({ chain }) {
+    try {
+      return this.validateFullChainTransactions(chain);
+    } catch (error) {
+      console.error('Transaction validation failed:', error.message);
+      return false;
+    }
+  }
+
+  validateFullChainTransactions(chain = this.chain) {
     for (let i = 1; i < chain.length; i++) {
       const block = chain[i];
-      let rewardCount = 0;
 
-      for (let transaction of block.data) {
-        if (transaction.input.address === REWARD_ADDRESS.address) {
-          rewardCount += 1;
-
-          if (rewardCount > 1) {
-            throw new Error('Too many reward transactions in block');
-          }
-        }
+      try {
+        TransactionValidator.validateBlockTransactions(
+          block,
+          chain.slice(0, i + 1)
+        );
+      } catch (error) {
+        throw new Error(`Block ${i} validation failed: ${error.message}`);
       }
     }
     return true;
+  }
+
+  validateFullChain() {
+    if (!Blockchain.isValid(this.chain)) {
+      return false;
+    }
+
+    try {
+      this.validateFullChainTransactions();
+      return true;
+    } catch (error) {
+      console.error('Full chain validation failed:', error.message);
+      return false;
+    }
+  }
+
+  getBlockchainStats() {
+    const totalBlocks = this.chain.length;
+    let totalTransactions = 0;
+    let totalRewards = 0;
+
+    for (let i = 1; i < this.chain.length; i++) {
+      const block = this.chain[i];
+      totalTransactions += block.data.length;
+
+      const rewardTransactions = block.data.filter(
+        (tx) => tx.input.address === REWARD_ADDRESS.address
+      );
+      totalRewards += rewardTransactions.length * MINING_REWARD;
+    }
+
+    return {
+      totalBlocks,
+      totalTransactions,
+      totalRewards,
+      lastBlockHash: this.chain.at(-1).hash,
+      chainValid: this.validateFullChain(),
+    };
   }
 
   static isValid(chain) {

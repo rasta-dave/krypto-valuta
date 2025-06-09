@@ -4,9 +4,9 @@ import authRoutes from './routes/auth-routes.mjs';
 import blockchainRoutes from './routes/blockchain-routes.mjs';
 import transactionRoutes from './routes/transaction-routes.mjs';
 import WebSocketServer from './network/WebSocketServer.mjs';
-import Blockchain from './models/blockchain/Blockchain.mjs';
-import TransactionPool from './models/wallet/TransactionPool.mjs';
-import Wallet from './models/wallet/Wallet.mjs';
+import Blockchain from './models/blockchain/blockchain.mjs';
+import TransactionPool from './models/wallet/transactionPool.mjs';
+import Wallet from './models/wallet/wallet.mjs';
 import { connectDB } from './database/connection.mjs';
 
 const initializeServer = async () => {
