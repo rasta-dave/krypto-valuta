@@ -111,6 +111,7 @@ export const getMyTransactions = (req, res) => {
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + parseInt(limit);
   const paginatedTransactions = allTransactions.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(allTransactions.length / limit);
 
   res.status(200).json({
     success: true,
@@ -118,13 +119,12 @@ export const getMyTransactions = (req, res) => {
     message: 'Transactions retrieved successfully',
     data: {
       transactions: paginatedTransactions,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(allTransactions.length / limit),
-        totalTransactions: allTransactions.length,
-        hasNext: endIndex < allTransactions.length,
-        hasPrev: page > 1,
-      },
+      total: allTransactions.length,
+      totalPages,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      hasNext: endIndex < allTransactions.length,
+      hasPrev: page > 1,
     },
   });
 };

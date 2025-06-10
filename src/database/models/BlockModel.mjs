@@ -37,7 +37,6 @@ const blockSchema = new mongoose.Schema(
   }
 );
 
-blockSchema.index({ hash: 1 });
 blockSchema.index({ blockIndex: 1 });
 
 export default mongoose.model('Block', blockSchema);

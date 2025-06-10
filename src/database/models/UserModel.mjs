@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: [true, 'Password must be at least 6 characters'],
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
@@ -68,9 +68,5 @@ userSchema.methods.toJSON = function () {
   delete userObject.password;
   return userObject;
 };
-
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
-userSchema.index({ walletAddress: 1 });
 
 export default mongoose.model('User', userSchema);

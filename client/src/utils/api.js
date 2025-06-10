@@ -49,6 +49,7 @@ export const blockchainAPI = {
   getBlock: (id) => api.get(`/blocks/${id}`),
   getStats: () => api.get('/blocks/stats'),
   getAllTransactions: (params) => api.get('/wallet/transactions', { params }),
+  search: (query) => api.get(`/blocks/search?q=${encodeURIComponent(query)}`),
 };
 
 export const healthAPI = {

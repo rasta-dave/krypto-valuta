@@ -11,6 +11,85 @@ export const getBlockchain = (req, res) => {
   });
 };
 
+export const getBlocks = (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+
+  const blocks = blockchain.chain.slice().reverse().slice(startIndex, endIndex);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: 'Blocks retrieved successfully',
+    data: {
+      blocks,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: blockchain.chain.length,
+        pages: Math.ceil(blockchain.chain.length / limit),
+      },
+    },
+  });
+};
+
+export const getBlock = (req, res) => {
+  const { hash } = req.params;
+  const block = blockchain.chain.find((block) => block.hash === hash);
+
+  if (!block) {
+    return res.status(404).json({
+      success: false,
+      statusCode: 404,
+      message: 'Block not found',
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: 'Block retrieved successfully',
+    data: block,
+  });
+};
+
+export const searchBlockchain = (req, res) => {
+  const { q: query } = req.query;
+
+  if (!query) {
+    return res.status(400).json({
+      success: false,
+      statusCode: 400,
+      message: 'Search query is required',
+    });
+  }
+
+  let foundBlock = null;
+  let foundTransaction = null;
+
+  foundBlock = blockchain.chain.find((block) => block.hash === query);
+
+  if (!foundBlock) {
+    for (const block of blockchain.chain) {
+      if (block.data && Array.isArray(block.data)) {
+        foundTransaction = block.data.find((tx) => tx.id === query);
+        if (foundTransaction) break;
+      }
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    message: 'Search completed',
+    data: {
+      block: foundBlock,
+      transaction: foundTransaction,
+    },
+  });
+};
+
 export const getBlockchainLength = (req, res) => {
   res.status(200).json({
     success: true,
@@ -21,8 +100,17 @@ export const getBlockchainLength = (req, res) => {
 };
 
 export const getStats = (req, res) => {
+  let totalTransactions = 0;
+
+  blockchain.chain.forEach((block) => {
+    if (block.data && Array.isArray(block.data)) {
+      totalTransactions += block.data.length;
+    }
+  });
+
   const stats = {
     totalBlocks: blockchain.chain.length,
+    totalTransactions,
     chainValid: blockchain.validateFullChain(),
     difficulty: blockchain.chain[blockchain.chain.length - 1]?.difficulty || 0,
     latestBlock: blockchain.chain[blockchain.chain.length - 1],
