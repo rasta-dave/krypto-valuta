@@ -1,5 +1,6 @@
 import UserModel from '../database/models/UserModel.mjs';
 import { createSendToken } from '../auth/jwtUtils.mjs';
+import Wallet from '../models/wallet/wallet.mjs';
 
 export const register = async (req, res) => {
   try {
@@ -27,10 +28,13 @@ export const register = async (req, res) => {
       });
     }
 
+    const wallet = new Wallet();
+
     const newUser = await UserModel.create({
       username,
       email,
       password,
+      walletAddress: wallet.publicKey,
     });
 
     createSendToken(newUser, 201, res, 'User registered successfully');

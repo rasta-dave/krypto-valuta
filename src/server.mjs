@@ -2,6 +2,7 @@ import { createServer } from 'http';
 import { app, notFound, errorHandler } from './app.mjs';
 import authRoutes from './routes/auth-routes.mjs';
 import blockchainRoutes from './routes/blockchain-routes.mjs';
+import walletRoutes from './routes/wallet-routes.mjs';
 import transactionRoutes from './routes/transaction-routes.mjs';
 import WebSocketServer from './network/WebSocketServer.mjs';
 import Blockchain from './models/blockchain/blockchain.mjs';
@@ -42,7 +43,8 @@ const initializeServer = async () => {
 
     app.use('/api/auth', authRoutes);
     app.use('/api/blocks', blockchainRoutes);
-    app.use('/api/wallet', transactionRoutes);
+    app.use('/api/wallet', walletRoutes);
+    app.use('/api/transactions', transactionRoutes);
 
     app.use(notFound);
     app.use(errorHandler);

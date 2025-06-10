@@ -129,3 +129,34 @@ export const getStats = (req, res) => {
     data: stats,
   });
 };
+
+export const resetBlockchain = async (req, res) => {
+  try {
+    const { blockchain } = req.app.locals;
+    const BlockModel = (await import('../database/models/BlockModel.mjs'))
+      .default;
+
+    await BlockModel.deleteMany({});
+
+    const Block = (await import('../models/blockchain/block.mjs')).default;
+    blockchain.chain = [Block.genesis()];
+
+    await blockchain.saveGenesisBlock();
+
+    res.status(200).json({
+      success: true,
+      statusCode: 200,
+      message: 'Blockchain reset successfully',
+      data: {
+        blocks: blockchain.chain.length,
+        chainValid: blockchain.validateFullChain(),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: error.message || 'Error resetting blockchain',
+    });
+  }
+};

@@ -11,6 +11,7 @@ import { errorHandler, notFound } from './middleware/errorMiddleware.mjs';
 import authRoutes from './routes/auth-routes.mjs';
 import blockchainRoutes from './routes/blockchain-routes.mjs';
 import walletRoutes from './routes/wallet-routes.mjs';
+import transactionRoutes from './routes/transaction-routes.mjs';
 
 dotenv.config();
 
@@ -106,6 +107,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/blocks', blockchainRoutes);
 app.use('/api/wallet', walletRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

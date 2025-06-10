@@ -39,16 +39,17 @@ export const authAPI = {
 
 export const walletAPI = {
   getInfo: () => api.get('/wallet/info'),
-  createTransaction: (data) => api.post('/wallet/transact', data),
+  createTransaction: (data) => api.post('/transactions/transact', data),
   getTransactions: (params) => api.get('/wallet/my-transactions', { params }),
-  mine: () => api.post('/wallet/mine'),
+  mine: () => api.post('/transactions/mine'),
 };
 
 export const blockchainAPI = {
   getBlocks: (params) => api.get('/blocks', { params }),
   getBlock: (id) => api.get(`/blocks/${id}`),
   getStats: () => api.get('/blocks/stats'),
-  getAllTransactions: (params) => api.get('/wallet/transactions', { params }),
+  getAllTransactions: (params) =>
+    api.get('/transactions/transactions', { params }),
   search: (query) => api.get(`/blocks/search?q=${encodeURIComponent(query)}`),
 };
 

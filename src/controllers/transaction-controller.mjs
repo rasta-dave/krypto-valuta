@@ -46,8 +46,22 @@ export const addTransaction = asyncHandler(async (req, res) => {
 export const mineTransactions = asyncHandler(async (req, res) => {
   const { blockchain, transactionPool, networkServer } = req.app.locals;
 
+  console.log('Mining request received');
+  console.log('User object:', req.user);
+  console.log('User wallet address:', req.user?.walletAddress);
+
+  if (!req.user?.walletAddress) {
+    return res.status(400).json({
+      success: false,
+      statusCode: 400,
+      message: 'User wallet address not found. Please log in again.',
+    });
+  }
+
   const minerWallet = new Wallet();
   minerWallet.publicKey = req.user.walletAddress;
+
+  console.log('Created miner wallet with address:', minerWallet.publicKey);
 
   const miner = new Miner({
     blockchain,
@@ -57,7 +71,9 @@ export const mineTransactions = asyncHandler(async (req, res) => {
   });
 
   try {
+    console.log('Starting mining process...');
     const miningResult = await miner.mineTransactions();
+    console.log('Mining successful:', miningResult);
 
     res.status(200).json({
       success: true,
@@ -70,8 +86,12 @@ export const mineTransactions = asyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
+    console.log('Mining error:', error.message);
+
     if (error.message.includes('No valid transactions')) {
+      console.log('No transactions in pool, attempting quick mine...');
       const quickMineResult = await miner.quickMine();
+      console.log('Quick mine successful:', quickMineResult);
 
       res.status(200).json({
         success: true,
@@ -84,10 +104,11 @@ export const mineTransactions = asyncHandler(async (req, res) => {
         },
       });
     } else {
-      res.status(400).json({
+      console.error('Mining failed with error:', error);
+      res.status(500).json({
         success: false,
-        statusCode: 400,
-        message: error.message,
+        statusCode: 500,
+        message: error.message || 'Mining failed',
       });
     }
   }

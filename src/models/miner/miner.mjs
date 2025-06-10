@@ -40,7 +40,7 @@ export default class Miner {
         );
       }
 
-      const rewardTransaction = Transaction.rewardTransaction({
+      const rewardTransaction = Transaction.createRewardTransaction({
         minerWallet: this.wallet,
       });
 
@@ -89,7 +89,7 @@ export default class Miner {
 
   async quickMine() {
     try {
-      const rewardTransaction = Transaction.rewardTransaction({
+      const rewardTransaction = Transaction.createRewardTransaction({
         minerWallet: this.wallet,
       });
 

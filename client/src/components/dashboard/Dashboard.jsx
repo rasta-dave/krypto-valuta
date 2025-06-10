@@ -19,38 +19,95 @@ const Dashboard = () => {
   const [walletData, setWalletData] = useState(null);
   const [blockchainStats, setBlockchainStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    balance: 0,
-    transactions: 0,
-    blocks: 0,
-    peers: 0,
-  });
+  const [userTransactions, setUserTransactions] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
-    setStats({
-      balance: 1250.75,
-      transactions: 42,
-      blocks: 1024,
-      peers: 8,
-    });
   }, []);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [walletResponse, statsResponse] = await Promise.all([
+
+      const [
+        walletResponse,
+        statsResponse,
+        transactionsResponse,
+        blocksResponse,
+      ] = await Promise.all([
         walletAPI.getInfo(),
         blockchainAPI.getStats(),
+        walletAPI.getTransactions({ page: 1, limit: 100 }),
+        blockchainAPI.getBlocks({ page: 1, limit: 1 }),
       ]);
+
+      console.log('API Responses:');
+      console.log('- Wallet:', JSON.stringify(walletResponse.data, null, 2));
+      console.log('- Stats:', JSON.stringify(statsResponse.data, null, 2));
+      console.log(
+        '- Transactions:',
+        JSON.stringify(transactionsResponse.data, null, 2)
+      );
+      console.log(
+        '- Transactions data detail:',
+        JSON.stringify(transactionsResponse.data.data, null, 2)
+      );
+      console.log('- Blocks:', JSON.stringify(blocksResponse.data, null, 2));
 
       setWalletData(walletResponse.data.data);
       setBlockchainStats(statsResponse.data.data);
+      setUserTransactions(transactionsResponse.data.data.transactions);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      console.error('Error details:', error.response?.data);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getUserBlocksMined = () => {
+    if (!userTransactions || !walletData) {
+      console.log('Missing data:', { userTransactions, walletData });
+      return 0;
+    }
+
+    console.log('=== DEBUGGING TRANSACTION COUNTING ===');
+    console.log('User address:', walletData.address);
+    console.log('Total transactions:', userTransactions.length);
+
+    console.log('All transactions:');
+    userTransactions.forEach((tx, index) => {
+      console.log(`Transaction ${index + 1}:`, {
+        id: tx.id?.substring(0, 8),
+        inputAddress: tx.input?.address,
+        outputMap: tx.outputMap,
+        outputKeys: tx.outputMap ? Object.keys(tx.outputMap) : [],
+        hasUserOutput: tx.outputMap && tx.outputMap[walletData.address],
+        isRewardAddress: tx.input?.address === '*reward-address*',
+      });
+    });
+
+    const rewardTransactions = userTransactions.filter((tx) => {
+      const isReward = tx.input?.address === '*reward-address*';
+      const hasOutput = tx.outputMap && tx.outputMap[walletData.address];
+
+      console.log('Reward check:', {
+        id: tx.id?.substring(0, 8),
+        isReward,
+        hasOutput,
+        inputAddress: tx.input?.address,
+        outputKeys: tx.outputMap ? Object.keys(tx.outputMap) : [],
+        passes: isReward && hasOutput,
+      });
+
+      return isReward && hasOutput;
+    });
+
+    console.log('=== RESULT ===');
+    console.log('Found reward transactions:', rewardTransactions.length);
+    console.log('=== END DEBUG ===');
+
+    return rewardTransactions.length;
   };
 
   const StatCard = ({
@@ -102,28 +159,28 @@ const Dashboard = () => {
   const statCards = [
     {
       title: 'Wallet Balance',
-      value: `${stats.balance} SC`,
+      value: `${walletData?.balance || 0} SC`,
       icon: WalletIcon,
       color: 'text-primary-600',
       bgColor: 'bg-primary-100',
     },
     {
       title: 'Transactions',
-      value: stats.transactions,
+      value: userTransactions?.length || 0,
       icon: Activity,
       color: 'text-success-600',
       bgColor: 'bg-success-100',
     },
     {
       title: 'Blocks Mined',
-      value: stats.blocks,
+      value: getUserBlocksMined(),
       icon: TrendingUp,
       color: 'text-warning-600',
       bgColor: 'bg-warning-100',
     },
     {
       title: 'Network Peers',
-      value: stats.peers,
+      value: networkStats?.peers || 0,
       icon: Users,
       color: 'text-secondary-600',
       bgColor: 'bg-secondary-100',
@@ -182,27 +239,35 @@ const Dashboard = () => {
               Latest Block
             </h3>
           </div>
-          {latestBlock ? (
+          {latestBlock || blockchainStats?.latestBlock ? (
             <div className='space-y-4'>
               <div className='flex items-center justify-between'>
                 <span className='text-sm text-secondary-600'>Block Hash</span>
                 <div className='flex items-center space-x-2'>
                   <Hash className='w-4 h-4 text-secondary-400' />
                   <span className='font-mono text-sm'>
-                    {latestBlock.hash.substring(0, 16)}...
+                    {(
+                      latestBlock?.hash || blockchainStats?.latestBlock?.hash
+                    )?.substring(0, 16)}
+                    ...
                   </span>
                 </div>
               </div>
               <div className='flex items-center justify-between'>
                 <span className='text-sm text-secondary-600'>Transactions</span>
                 <span className='text-sm font-medium'>
-                  {latestBlock.data?.length || 0}
+                  {latestBlock?.data?.length ||
+                    blockchainStats?.latestBlock?.data?.length ||
+                    0}
                 </span>
               </div>
               <div className='flex items-center justify-between'>
                 <span className='text-sm text-secondary-600'>Difficulty</span>
                 <span className='text-sm font-medium'>
-                  {latestBlock.difficulty}
+                  {latestBlock?.difficulty ||
+                    blockchainStats?.latestBlock?.difficulty ||
+                    blockchainStats?.difficulty ||
+                    0}
                 </span>
               </div>
               <div className='flex items-center justify-between'>
@@ -210,7 +275,11 @@ const Dashboard = () => {
                 <div className='flex items-center space-x-2'>
                   <Clock className='w-4 h-4 text-secondary-400' />
                   <span className='text-sm'>
-                    {new Date(latestBlock.timestamp).toLocaleString()}
+                    {new Date(
+                      latestBlock?.timestamp ||
+                        blockchainStats?.latestBlock?.timestamp ||
+                        Date.now()
+                    ).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -237,7 +306,9 @@ const Dashboard = () => {
                   Network Peers
                 </span>
               </div>
-              <span className='text-sm font-medium'>{networkStats.peers}</span>
+              <span className='text-sm font-medium'>
+                {networkStats?.peers || 0}
+              </span>
             </div>
             <div className='flex items-center justify-between'>
               <div className='flex items-center space-x-2'>
@@ -247,7 +318,7 @@ const Dashboard = () => {
                 </span>
               </div>
               <span className='text-sm font-medium'>
-                {networkStats.difficulty}
+                {networkStats?.difficulty || blockchainStats?.difficulty || 0}
               </span>
             </div>
             <div className='flex items-center justify-between'>
@@ -256,7 +327,7 @@ const Dashboard = () => {
                 <span className='text-sm text-secondary-600'>Hash Rate</span>
               </div>
               <span className='text-sm font-medium'>
-                {networkStats.hashRate} H/s
+                {networkStats?.hashRate || 0} H/s
               </span>
             </div>
             <div className='flex items-center justify-between'>
