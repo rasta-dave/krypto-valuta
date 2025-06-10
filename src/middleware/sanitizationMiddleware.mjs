@@ -2,9 +2,11 @@ import validator from 'validator';
 import xss from 'xss';
 
 export const sanitizeInput = (req, res, next) => {
+  const sensitiveFields = ['password', 'confirmPassword'];
+
   const sanitizeObject = (obj) => {
     for (const key in obj) {
-      if (typeof obj[key] === 'string') {
+      if (typeof obj[key] === 'string' && !sensitiveFields.includes(key)) {
         obj[key] = validator.escape(obj[key]);
         obj[key] = xss(obj[key]);
       } else if (typeof obj[key] === 'object' && obj[key] !== null) {

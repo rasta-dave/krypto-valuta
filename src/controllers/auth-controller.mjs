@@ -21,7 +21,9 @@ export const register = async (req, res) => {
       return res.status(400).json({
         success: false,
         statusCode: 400,
-        message: 'User with this email or username already exists',
+        message: `User with this ${
+          existingUser.email === email ? 'email' : 'username'
+        } already exists`,
       });
     }
 
@@ -33,6 +35,7 @@ export const register = async (req, res) => {
 
     createSendToken(newUser, 201, res, 'User registered successfully');
   } catch (error) {
+    console.error('Registration error:', error.message);
     res.status(400).json({
       success: false,
       statusCode: 400,

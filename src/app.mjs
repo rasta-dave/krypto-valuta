@@ -4,10 +4,13 @@ import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import { generalLimiter } from './middleware/rateLimitMiddleware.mjs';
 import { sanitizeInput } from './middleware/sanitizationMiddleware.mjs';
 import { errorHandler, notFound } from './middleware/errorMiddleware.mjs';
 import authRoutes from './routes/auth-routes.mjs';
+import blockchainRoutes from './routes/blockchain-routes.mjs';
+import walletRoutes from './routes/wallet-routes.mjs';
 
 dotenv.config();
 
@@ -47,6 +50,8 @@ app.use(
 );
 
 app.use(generalLimiter);
+
+app.use(cookieParser());
 
 app.use(
   express.json({
@@ -93,48 +98,14 @@ app.use(
 app.use(sanitizeInput);
 
 app.use((req, res, next) => {
-  if (req.headers.cookie) {
-    const cookies = {};
-    req.headers.cookie.split(';').forEach((cookie) => {
-      const [name, value] = cookie.trim().split('=');
-      cookies[name] = value;
-    });
-    req.cookies = cookies;
-  } else {
-    req.cookies = {};
-  }
-  next();
-});
-
-app.use((req, res, next) => {
-  res.cookie = (name, value, options = {}) => {
-    const cookieString =
-      `${name}=${value}; ` +
-      Object.entries(options)
-        .map(([key, val]) => {
-          if (key === 'expires' && val instanceof Date) {
-            return `expires=${val.toUTCString()}`;
-          }
-          if (typeof val === 'boolean') {
-            return val ? key : '';
-          }
-          return `${key}=${val}`;
-        })
-        .filter(Boolean)
-        .join('; ');
-
-    res.setHeader('Set-Cookie', cookieString);
-  };
-  next();
-});
-
-app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
   console.log(`${req.method} ${req.path} - ${req.ip} - ${req.requestTime}`);
   next();
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/blocks', blockchainRoutes);
+app.use('/api/wallet', walletRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

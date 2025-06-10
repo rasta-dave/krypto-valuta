@@ -1,3 +1,7 @@
+npm run dev-full
+
+---
+
 Krypto Valuta och nätverk
 I denna sista inlämningsuppgift ska ni skapa en fullständig blockkedja för en egen
 
