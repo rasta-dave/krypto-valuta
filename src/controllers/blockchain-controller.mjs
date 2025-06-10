@@ -1,8 +1,8 @@
 import Blockchain from '../models/blockchain/blockchain.mjs';
 
-const blockchain = new Blockchain();
-
 export const getBlockchain = (req, res) => {
+  const { blockchain } = req.app.locals;
+
   res.status(200).json({
     success: true,
     statusCode: 200,
@@ -12,6 +12,7 @@ export const getBlockchain = (req, res) => {
 };
 
 export const getBlocks = (req, res) => {
+  const { blockchain } = req.app.locals;
   const { page = 1, limit = 10 } = req.query;
   const startIndex = (page - 1) * limit;
   const endIndex = page * limit;
@@ -35,6 +36,7 @@ export const getBlocks = (req, res) => {
 };
 
 export const getBlock = (req, res) => {
+  const { blockchain } = req.app.locals;
   const { hash } = req.params;
   const block = blockchain.chain.find((block) => block.hash === hash);
 
@@ -55,6 +57,7 @@ export const getBlock = (req, res) => {
 };
 
 export const searchBlockchain = (req, res) => {
+  const { blockchain } = req.app.locals;
   const { q: query } = req.query;
 
   if (!query) {
@@ -91,6 +94,8 @@ export const searchBlockchain = (req, res) => {
 };
 
 export const getBlockchainLength = (req, res) => {
+  const { blockchain } = req.app.locals;
+
   res.status(200).json({
     success: true,
     statusCode: 200,
@@ -100,6 +105,7 @@ export const getBlockchainLength = (req, res) => {
 };
 
 export const getStats = (req, res) => {
+  const { blockchain } = req.app.locals;
   let totalTransactions = 0;
 
   blockchain.chain.forEach((block) => {
