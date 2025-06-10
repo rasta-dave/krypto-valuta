@@ -1,67 +1,150 @@
+# Krypto Valuta - Blockchain Cryptocurrency Project
+
+Ett blockchain-baserat kryptovaluta system med nätverksfunktionalitet, säkerhet och webbklient.
+
+## Projektöversikt
+
+Detta projekt implementerar en blockchain för en egen kryptovaluta med följande funktioner:
+
+### Kärnfunktioner
+
+- **Blockchain**: Komplett blockkedja med proof-of-work mining
+- **Transaktioner**: Säker transaktionshantering med validering
+- **Transactionspool**: Hantering av väntande transaktioner
+- **Mining**: Belöningstransaktioner för miners
+- **Nätverk**: Peer-to-peer kommunikation mellan noder
+- **Säkerhet**: JWT-autentisering och skydd mot angrepp
+- **Databas**: MongoDB för persistent lagring
+- **Webbklient**: React-baserad användargränssnitt
+
+## Installation
+
+### Krav
+
+- Node.js (v18 eller senare)
+- MongoDB
+- npm eller yarn
+
+### Steg 1: Klona projektet
+
+```bash
+git clone <repository-url>
+cd krypto-valuta
+```
+
+### Steg 2: Installera backend-beroenden
+
+```bash
+npm install
+```
+
+### Steg 3: Installera klient-beroenden
+
+```bash
+cd client
+npm install
+cd ..
+```
+
+### Steg 4: Konfigurera miljövariabler
+
+Skapa en `.env` fil i root-mappen:
+
+```env
+NODE_ENV=development
+JWT_SECRET=your-secret-key
+MONGODB_URI=mongodb://localhost:27017/smartchain
+```
+
+### Steg 5: Starta MongoDB
+
+Säkerställ att MongoDB körs på din dator.
+
+## Användning
+
+### Starta hela applikationen (rekommenderat)
+
+```bash
 npm run dev-full
+```
 
----
+Detta startar både backend-servern och React-klienten samtidigt.
 
-Krypto Valuta och nätverk
-I denna sista inlämningsuppgift ska ni skapa en fullständig blockkedja för en egen
+### Eller starta separat:
 
-kryptovaluta med transaktionshantering och validering av transaktionerna.
+#### Starta endast backend
 
-Ni ska använda er av en transaktionspool för att hantera transaktioner innan de placeras
+```bash
+npm run dev
+```
 
-i ett block. När ett block skapas för transaktionerna ska även en ”belöningstransaktion”
+Backend körs på `http://localhost:3000`
 
-skapas och spåras i transaktionspoolen.
+#### Starta endast klient
 
-Transaktionerna måste valideras så att de följer de regler som vi gått igenom under
+```bash
+npm run client
+```
 
-lektionerna.
+Klient körs på `http://localhost:5173`
 
-Nätverk
-Det ska gå att starta upp flera noder med blockkedjan. Synkronisering av blockkedjan
+### Starta flera noder
 
-ska ske vid uppstart av en ny nod, vid addering av transaktioner samt när ett block
+För att testa nätverksfunktionalitet:
 
-skapas.
+```bash
+npm run dev-node
+```
 
-Teknologin för nätverkskommunikation ska vara antingen Redis, Pubnub eller
+Detta startar en ny nod på en slumpmässig port.
 
-Websockets.
+## Funktioner
 
-Blockkedjan, block samt transaktioner ska sparas ner i en mongodb databas. (Även om
+### Webbklient
 
-detta i princip inte är nödvändigt i en verklig blockkedja).
+1. **Registrering/Inloggning**: Skapa konto och logga in
+2. **Dashboard**: Översikt av blockchain-status
+3. **Wallet**: Hantera din digitala plånbok
+4. **Transaktioner**: Skapa och visa transaktioner
+5. **Mining**: Starta mining-processen
+6. **Explorer**: Utforska blockchain och block
 
-Säkerhet
-För att kunna nyttja en blockkedja som konsument måste man vara registrerad och
+### API Endpoints
 
-inloggad. Här ska ni använda Json Web Token(JWT) som teknologi för att validera att en
+- `POST /api/auth/register` - Registrera användare
+- `POST /api/auth/login` - Logga in
+- `GET /api/blocks` - Hämta blockchain
+- `POST /api/wallet/transaction` - Skapa transaktion
+- `POST /api/wallet/mine` - Starta mining
 
-användare är inloggad och tillhöra korrekt roll för att kunna skapa en ny transaktion och
+## Teknisk Stack
 
-att kunna lista sina egna transaktioner samt block. Användare ska lagras i ett mongodb
+### Backend
 
-dokument.
+- **Node.js** med ES-moduler
+- **Express.js** för API
+- **MongoDB** med Mongoose
+- **Socket.IO** för WebSocket-kommunikation
+- **JWT** för autentisering
+- **Vitest** för testning
 
-Klient
-En klient ska utvecklas i antingen React med Vite eller en renodlad JavaScript
+### Frontend
 
-applikation med HTML och CSS.
+- **React** med Vite
+- **Tailwind CSS** för styling
+- **React Router** för navigation
 
-Klient applikationen ska kunna skapa nya transaktioner, lista transaktioner och lista
+### Säkerhet
 
-block.
+- **Helmet** för säkra headers
+- **Rate Limiting** mot DDOS
+- **Input Sanitization** mot XSS
+- **MongoDB Sanitization** mot NoSQL-injektioner
 
-Dessutom ska det gå att skapa ett block med transaktioner, dvs ”mine” av block.
+## Testning
 
-Godkänt krav (G)
-Allt ovanstående måste vara på plats för betyget G.
+Kör alla tester:
 
-Väl godkänt (VG)
-För VG ska TDD användas för transaktionshanteringen. Alla ”Best practices” som vi gått
-
-igenom under kursens gång ska användas. Det vill säga Clean Code, SOC, MVC.
-
-Dessutom ska servern vara säker mot olika typer av angrepp, till exempel NoSql
-
-injections, DDOS samt XSS försök.
+```bash
+npm test
+```
