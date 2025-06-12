@@ -121,7 +121,7 @@ export const getWalletInfo = asyncHandler(async (req, res) => {
   const wallet = new Wallet();
   wallet.publicKey = address;
 
-  const balance = wallet.calculateBalance({ chain: blockchain.chain });
+  const balance = Wallet.calculateBalance({ chain: blockchain.chain, address });
   const transactions = transactionPool.getTransactionsByAddress(address);
 
   res.status(200).json({

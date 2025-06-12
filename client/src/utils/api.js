@@ -39,9 +39,9 @@ export const authAPI = {
 
 export const walletAPI = {
   getInfo: () => api.get('/wallet/info'),
-  createTransaction: (data) => api.post('/transactions/transact', data),
+  createTransaction: (data) => api.post('/wallet/transaction', data),
   getTransactions: (params) => api.get('/wallet/my-transactions', { params }),
-  mine: () => api.post('/transactions/mine'),
+  mine: () => api.post('/wallet/mine'),
 };
 
 export const blockchainAPI = {

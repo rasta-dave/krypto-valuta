@@ -41,25 +41,11 @@ const Dashboard = () => {
         blockchainAPI.getBlocks({ page: 1, limit: 1 }),
       ]);
 
-      console.log('API Responses:');
-      console.log('- Wallet:', JSON.stringify(walletResponse.data, null, 2));
-      console.log('- Stats:', JSON.stringify(statsResponse.data, null, 2));
-      console.log(
-        '- Transactions:',
-        JSON.stringify(transactionsResponse.data, null, 2)
-      );
-      console.log(
-        '- Transactions data detail:',
-        JSON.stringify(transactionsResponse.data.data, null, 2)
-      );
-      console.log('- Blocks:', JSON.stringify(blocksResponse.data, null, 2));
-
       setWalletData(walletResponse.data.data);
       setBlockchainStats(statsResponse.data.data);
       setUserTransactions(transactionsResponse.data.data.transactions);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      console.error('Error details:', error.response?.data);
     } finally {
       setLoading(false);
     }
@@ -67,45 +53,14 @@ const Dashboard = () => {
 
   const getUserBlocksMined = () => {
     if (!userTransactions || !walletData) {
-      console.log('Missing data:', { userTransactions, walletData });
       return 0;
     }
-
-    console.log('=== DEBUGGING TRANSACTION COUNTING ===');
-    console.log('User address:', walletData.address);
-    console.log('Total transactions:', userTransactions.length);
-
-    console.log('All transactions:');
-    userTransactions.forEach((tx, index) => {
-      console.log(`Transaction ${index + 1}:`, {
-        id: tx.id?.substring(0, 8),
-        inputAddress: tx.input?.address,
-        outputMap: tx.outputMap,
-        outputKeys: tx.outputMap ? Object.keys(tx.outputMap) : [],
-        hasUserOutput: tx.outputMap && tx.outputMap[walletData.address],
-        isRewardAddress: tx.input?.address === '*reward-address*',
-      });
-    });
 
     const rewardTransactions = userTransactions.filter((tx) => {
       const isReward = tx.input?.address === '*reward-address*';
       const hasOutput = tx.outputMap && tx.outputMap[walletData.address];
-
-      console.log('Reward check:', {
-        id: tx.id?.substring(0, 8),
-        isReward,
-        hasOutput,
-        inputAddress: tx.input?.address,
-        outputKeys: tx.outputMap ? Object.keys(tx.outputMap) : [],
-        passes: isReward && hasOutput,
-      });
-
       return isReward && hasOutput;
     });
-
-    console.log('=== RESULT ===');
-    console.log('Found reward transactions:', rewardTransactions.length);
-    console.log('=== END DEBUG ===');
 
     return rewardTransactions.length;
   };
